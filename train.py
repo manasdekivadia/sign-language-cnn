@@ -1,7 +1,6 @@
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
-import os
 
 # Set random seed for reproducibility
 RANDOM_SEED = 42
@@ -10,7 +9,7 @@ tf.random.set_seed(RANDOM_SEED)
 
 # Paths
 dataset_path = r"slr\model\keypoint.csv"
-best_model_path = r"slr_model_best.hdf5"    
+best_model_path = r"slr_model_best.hdf5"     # best model
 tflite_output_path = r"slr\model\slr_model.tflite"
 
 # Number of classes 
@@ -25,10 +24,10 @@ y = np.loadtxt(dataset_path, delimiter=',', dtype='int32', usecols=(0,))
 print("Splitting dataset...")
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.75, random_state=RANDOM_SEED)
 
-# Define the model
+# Build model
 print("Building model...")
 model = tf.keras.models.Sequential([
-    tf.keras.layers.Input((42,)),  # 21 keypoints * 2 (x, y)
+    tf.keras.layers.Input((42,)),
     tf.keras.layers.Dropout(0.2),
     tf.keras.layers.Dense(20, activation='relu'),
     tf.keras.layers.Dropout(0.4),
@@ -37,23 +36,51 @@ model = tf.keras.models.Sequential([
 ])
 
 # Compile model
-model.compile(optimizer='adam',
-              loss='sparse_categorical_crossentropy',
-              metrics=['accuracy'])
+model.compile(
+    optimizer='adam',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
 
-# Train the model
+# === CALLBACKS ===
+checkpoint = tf.keras.callbacks.ModelCheckpoint(
+    best_model_path,
+    monitor='val_accuracy',
+    save_best_only=True,
+    mode='max',
+    verbose=1
+)
+
+early_stop = tf.keras.callbacks.EarlyStopping(
+    monitor='val_accuracy',
+    patience=50,                # stop if no improvement for 50 epochs
+    restore_best_weights=True
+)
+
+# Train with callbacks
 print("Training model...")
-model.fit(X_train, y_train, epochs=50, validation_data=(X_test, y_test))
+model.fit(
+    X_train,
+    y_train,
+    epochs=1000,
+    validation_data=(X_test, y_test),
+    callbacks=[checkpoint, early_stop],
+    verbose=1
+)
 
-# Save the model in HDF5 format
-print(f"Saving model to {model_h5_path}...")
-model.save(model_h5_path)
+# =============================
+# Load best model before TFLite
+# =============================
+print("Loading best model...")
+best_model = tf.keras.models.load_model(best_model_path)
 
 # Convert to TFLite
-print(f"Converting model to TFLite and saving to {model_tflite_path}...")
-converter = tf.lite.TFLiteConverter.from_keras_model(model)
+print(f"Converting to TFLite: {tflite_output_path}")
+
+converter = tf.lite.TFLiteConverter.from_keras_model(best_model)
 tflite_model = converter.convert()
-with open(model_tflite_path, 'wb') as f:
+
+with open(tflite_output_path, "wb") as f:
     f.write(tflite_model)
 
-print("Training complete.")
+print("Training complete! Best model saved and exported to TFLite.")

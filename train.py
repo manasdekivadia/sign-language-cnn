@@ -9,9 +9,9 @@ np.random.seed(RANDOM_SEED)
 tf.random.set_seed(RANDOM_SEED)
 
 # Paths
-dataset_path = r"C:\Users\Manas\OneDrive\Desktop\AI ML\Sign Language\sign-language-cnn\temp-dl\temppp\slr\model\keypoint.csv"
-model_h5_path = r"C:\Users\Manas\OneDrive\Desktop\AI ML\Sign Language\sign-language-cnn\temp-dl\temppp\slr\model\slr_model.hdf5"
-model_tflite_path = r"C:\Users\Manas\OneDrive\Desktop\AI ML\Sign Language\sign-language-cnn\temp-dl\temppp\slr\model\slr_model.tflite"
+dataset_path = r"slr\model\keypoint.csv"
+best_model_path = r"slr_model_best.hdf5"    
+tflite_output_path = r"slr\model\slr_model.tflite"
 
 # Number of classes 
 NUM_CLASSES = 24
